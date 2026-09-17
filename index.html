@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pikolatta — Oyun, Yazılım, 3D Baskı</title>
+<meta name="description" content="Pikolatta: oyunlardan yazılıma, 3D baskıdan mobil uygulamalara uzanan bağımsız bir atölye.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍫</text></svg>">
+<style>
+  @font-face {
+    font-family: 'Space Grotesk';
+    src: local('Space Grotesk');
+  }
+
+  :root{
+    --navy-deep:   #0A2138;
+    --navy-base:   #0F2E4C;
+    --navy-panel:  #12385C;
+    --line-cyan:   rgba(120, 178, 214, 0.22);
+    --line-cyan-strong: rgba(120, 178, 214, 0.45);
+    --ink:         #E7F0F7;
+    --ink-dim:     #9BB7CC;
+    --ink-faint:   #5E7E96;
+    --amber:       #E2934F;
+    --amber-dim:   #B87438;
+    --redline:     #C25A45;
+    --radius: 2px;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    background:var(--navy-base);
+    color:var(--ink);
+    font-family:'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      linear-gradient(var(--line-cyan) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-cyan) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+
+  a{ color:inherit; text-decoration:none; }
+
+  .mono{
+    font-family:'JetBrains Mono','SF Mono',Consolas,monospace;
+    letter-spacing:0.02em;
+  }
+
+  /* ---------- Corner registration marks ---------- */
+  .sheet{
+    position:relative;
+    border-top:1px solid var(--line-cyan-strong);
+    padding:88px 0 96px;
+  }
+  .sheet::before, .sheet::after,
+  .sheet .reg-br, .sheet .reg-bl{
+    content:"";
+    position:absolute;
+    width:22px; height:22px;
+    border-color: var(--ink-faint);
+  }
+  .sheet::before{ top:18px; left:18px; border-top:1px solid; border-left:1px solid; }
+  .sheet::after{ top:18px; right:18px; border-top:1px solid; border-right:1px solid; }
+  .sheet .reg-bl{ bottom:18px; left:18px; border-bottom:1px solid; border-left:1px solid; }
+  .sheet .reg-br{ bottom:18px; right:18px; border-bottom:1px solid; border-right:1px solid; }
+
+  .wrap{
+    max-width:1040px;
+    margin:0 auto;
+    padding:0 32px;
+  }
+
+  .sheet-tag{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:12.5px;
+    color:var(--ink-faint);
+    margin-bottom:28px;
+  }
+  .sheet-tag .dot{
+    width:6px; height:6px;
+    background:var(--amber);
+    border-radius:50%;
+    flex:none;
+  }
+
+  /* ---------- Header / nav ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(10,33,56,0.86);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line-cyan-strong);
+  }
+  header .wrap{
+    display:flex; align-items:center; justify-content:space-between;
+    padding-top:18px; padding-bottom:18px;
+  }
+  .wordmark{
+    font-size:19px;
+    font-weight:700;
+    letter-spacing:0.01em;
+    display:flex; align-items:center; gap:9px;
+  }
+  .wordmark .bite{
+    display:inline-block;
+    width:15px; height:15px;
+    background:var(--amber);
+    border-radius:50%;
+    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 60%, 45% 60%, 45% 40%, 0% 40%);
+    transform:rotate(-8deg);
+  }
+  nav{ display:flex; gap:30px; font-size:14px; color:var(--ink-dim); }
+  nav a:hover{ color:var(--ink); }
+
+  /* ---------- Hero ---------- */
+  .hero{ padding-top:120px; padding-bottom:120px; border-top:none; }
+  .hero .wrap{ position:relative; }
+  .hero-label{
+    font-size:12.5px;
+    color:var(--amber);
+    margin-bottom:22px;
+  }
+  h1{
+    font-size:clamp(42px, 7vw, 84px);
+    font-weight:700;
+    letter-spacing:-0.01em;
+    line-height:0.98;
+    max-width:820px;
+  }
+  h1 .thin{ font-weight:300; color:var(--ink-dim); }
+  .hero p.lede{
+    margin-top:30px;
+    max-width:520px;
+    font-size:18px;
+    color:var(--ink-dim);
+  }
+  .hero-scale{
+    margin-top:56px;
+    display:flex;
+    gap:0;
+    border-top:1px solid var(--line-cyan-strong);
+    border-bottom:1px solid var(--line-cyan-strong);
+  }
+  .hero-scale div{
+    flex:1;
+    padding:18px 20px;
+    border-right:1px solid var(--line-cyan-strong);
+  }
+  .hero-scale div:last-child{ border-right:none; }
+  .hero-scale .num{ font-size:24px; font-weight:700; }
+  .hero-scale .lab{ font-size:12px; color:var(--ink-faint); margin-top:4px; }
+
+  /* ---------- Section heading ---------- */
+  .section-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:24px;
+    margin-bottom:56px;
+    flex-wrap:wrap;
+  }
+  h2{
+    font-size:clamp(28px,4vw,40px);
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  .section-head p{
+    max-width:340px;
+    color:var(--ink-dim);
+    font-size:15px;
+  }
+
+  /* ---------- Disciplines ---------- */
+  .disciplines{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    border:1px solid var(--line-cyan-strong);
+  }
+  .discipline{
+    padding:32px 26px;
+    border-right:1px solid var(--line-cyan-strong);
+    position:relative;
+    min-height:230px;
+    display:flex;
+    flex-direction:column;
+  }
+  .discipline:last-child{ border-right:none; }
+  .discipline .idx{
+    font-size:12px;
+    color:var(--ink-faint);
+    margin-bottom:20px;
+  }
+  .discipline h3{
+    font-size:19px;
+    font-weight:700;
+    margin-bottom:10px;
+  }
+  .discipline p{
+    font-size:13.5px;
+    color:var(--ink-dim);
+    flex:1;
+  }
+  .discipline .spec{
+    font-size:11px;
+    color:var(--ink-faint);
+    margin-top:18px;
+    padding-top:12px;
+    border-top:1px solid var(--line-cyan);
+  }
+
+  /* ---------- Projects ---------- */
+  .project-list{ display:flex; flex-direction:column; }
+  .project{
+    display:grid;
+    grid-template-columns:110px 1fr 200px;
+    gap:28px;
+    align-items:start;
+    padding:34px 0;
+    border-top:1px solid var(--line-cyan-strong);
+  }
+  .project:last-child{ border-bottom:1px solid var(--line-cyan-strong); }
+  .project .pcode{
+    font-size:12.5px;
+    color:var(--amber);
+    padding-top:4px;
+  }
+  .project h3{ font-size:22px; font-weight:700; margin-bottom:8px; }
+  .project p{ color:var(--ink-dim); font-size:14.5px; max-width:520px; }
+  .project .meta{
+    font-size:11.5px;
+    color:var(--ink-faint);
+    text-align:right;
+  }
+  .project .meta div{ margin-bottom:6px; }
+  .project .status{
+    display:inline-block;
+    padding:3px 8px;
+    border:1px solid var(--line-cyan-strong);
+    color:var(--ink-dim);
+    font-size:10.5px;
+  }
+  .project .status.live{ color:var(--amber); border-color:var(--amber-dim); }
+
+  /* ---------- Contact ---------- */
+  .contact-grid{
+    display:grid;
+    grid-template-columns:1.2fr 1fr;
+    gap:60px;
+    align-items:start;
+  }
+  .contact-grid h2{ margin-bottom:22px; }
+  .contact-grid p{ color:var(--ink-dim); font-size:16px; max-width:440px; }
+  .contact-list{ margin-top:0; }
+  .contact-list a{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:18px 0;
+    border-top:1px solid var(--line-cyan-strong);
+    font-size:15px;
+  }
+  .contact-list div:last-child a{ border-bottom:1px solid var(--line-cyan-strong); }
+  .contact-list .k{ color:var(--ink-faint); font-size:12px; }
+
+  footer{
+    padding:28px 0;
+    border-top:1px solid var(--line-cyan-strong);
+  }
+  footer .wrap{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    color:var(--ink-faint);
+    flex-wrap:wrap;
+    gap:10px;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 880px){
+    .disciplines{ grid-template-columns:repeat(2,1fr); }
+    .discipline{ border-bottom:1px solid var(--line-cyan-strong); }
+    .discipline:nth-child(2n){ border-right:none; }
+    .hero-scale{ flex-wrap:wrap; }
+    .hero-scale div{ flex:1 1 50%; border-bottom:1px solid var(--line-cyan-strong); }
+    .contact-grid{ grid-template-columns:1fr; gap:40px; }
+  }
+
+  @media (max-width: 620px){
+    .disciplines{ grid-template-columns:1fr; }
+    .discipline{ border-right:none; }
+    .project{ grid-template-columns:1fr; gap:10px; }
+    .project .meta{ text-align:left; }
+    nav{ display:none; }
+    .sheet{ padding:60px 0 64px; }
+  }
+
+  :focus-visible{
+    outline:2px solid var(--amber);
+    outline-offset:3px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="wordmark"><span class="bite"></span>PIKOLATTA</div>
+    <nav>
+      <a href="#alanlar">Alanlar</a>
+      <a href="#projeler">Projeler</a>
+      <a href="#iletisim">İletişim</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero sheet">
+  <div class="reg-bl"></div><div class="reg-br"></div>
+  <div class="wrap">
+    <div class="hero-label mono">ATÖLYE NO. 001 — ADANA, TÜRKİYE</div>
+    <h1>Fikri çizer,<br><span class="thin">üretip</span> sahaya süreriz.</h1>
+    <p class="lede">Pikolatta; oyun, yazılım, mobil uygulama ve 3D baskı arasında gezinen, tek kişilik bağımsız bir atölye. Her proje ayrı bir çizim masası, aynı disiplinle çalışır.</p>
+
+    <div class="hero-scale mono">
+      <div><div class="num">4</div><div class="lab">aktif disiplin</div></div>
+      <div><div class="num">2026</div><div class="lab">kuruluş</div></div>
+      <div><div class="num">1</div><div class="lab">kişilik ekip</div></div>
+      <div><div class="num">TR</div><div class="lab">merkez</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="alanlar">
+  <div class="reg-bl"></div><div class="reg-br"></div>
+  <div class="wrap">
+    <div class="sheet-tag mono"><span class="dot"></span>ÇALIŞMA ALANLARI</div>
+    <div class="section-head">
+      <h2>Dört disiplin,<br>tek bakış açısı.</h2>
+      <p>Mühendislik geçmişinden gelen bir alışkanlık: her fikri önce parçalarına ayırıp, sonra yeniden bir araya getirmek.</p>
+    </div>
+
+    <div class="disciplines">
+      <div class="discipline">
+        <div class="idx mono">01 / OYUN</div>
+        <h3>Oyun Geliştirme</h3>
+        <p>Tarayıcı tabanlı, hızlı prototipten oynanabilir sürüme giden bağımsız oyun projeleri.</p>
+        <div class="spec mono">Unity · WebGL</div>
+      </div>
+      <div class="discipline">
+        <div class="idx mono">02 / YAZILIM</div>
+        <h3>Yazılım &amp; ERP</h3>
+        <p>Masaüstü uygulamalar, kasa ve stok yönetimi, teknik servis odaklı ERP çözümleri.</p>
+        <div class="spec mono">Electron · Web</div>
+      </div>
+      <div class="discipline">
+        <div class="idx mono">03 / MOBİL</div>
+        <h3>Mobil Uygulamalar</h3>
+        <p>Google Play'de yayınlanan, gerçek bir ihtiyaçtan doğan mobil uygulamalar.</p>
+        <div class="spec mono">Flutter · Android</div>
+      </div>
+      <div class="discipline">
+        <div class="idx mono">04 / 3D</div>
+        <h3>3D Baskı &amp; Prototip</h3>
+        <p>Klipper tabanlı baskı hattıyla parça tasarımı, prototipleme ve küçük seri üretim.</p>
+        <div class="spec mono">FDM · CAD</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="projeler">
+  <div class="reg-bl"></div><div class="reg-br"></div>
+  <div class="wrap">
+    <div class="sheet-tag mono"><span class="dot"></span>PROJE ARŞİVİ</div>
+    <div class="section-head">
+      <h2>Çizim masasından çıkanlar</h2>
+      <p>Devam eden ve tamamlanmış işlerden bir kesit.</p>
+    </div>
+
+    <div class="project-list">
+      <div class="project">
+        <div class="pcode mono">PRJ—01</div>
+        <div>
+          <h3>Vahşi Doğa Derbisi</h3>
+          <p>Türk futbol derbisi temalı, hayvan karakterli tarayıcı dövüş oyunu.</p>
+        </div>
+        <div class="meta mono">
+          <div>OYUN · TARAYICI</div>
+          <span class="status">GELİŞTİRİLİYOR</span>
+        </div>
+      </div>
+
+      <div class="project">
+        <div class="pcode mono">PRJ—02</div>
+        <div>
+          <h3>MedStudy AI</h3>
+          <p>Türk tıp öğrencileri için yapay zeka destekli mobil eğitim uygulaması.</p>
+        </div>
+        <div class="meta mono">
+          <div>MOBİL · FLUTTER</div>
+          <span class="status">GELİŞTİRİLİYOR</span>
+        </div>
+      </div>
+
+      <div class="project">
+        <div class="pcode mono">PRJ—03</div>
+        <div>
+          <h3>Kasa Defteri</h3>
+          <p>Windows masaüstü için kasa ve muhasebe takip uygulaması.</p>
+        </div>
+        <div class="meta mono">
+          <div>YAZILIM · ELECTRON</div>
+          <span class="status live">YAYINDA</span>
+        </div>
+      </div>
+
+      <div class="project">
+        <div class="pcode mono">PRJ—04</div>
+        <div>
+          <h3>MiyareERP</h3>
+          <p>Finans, stok ve teknik servis yönetimini bir araya getiren ticari ERP ürünü.</p>
+        </div>
+        <div class="meta mono">
+          <div>YAZILIM · WEB</div>
+          <span class="status">GELİŞTİRİLİYOR</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="iletisim">
+  <div class="reg-bl"></div><div class="reg-br"></div>
+  <div class="wrap">
+    <div class="sheet-tag mono"><span class="dot"></span>İLETİŞİM</div>
+    <div class="contact-grid">
+      <div>
+        <h2>Bir fikrin mi var,<br>yoksa iş birliği mi?</h2>
+        <p>Oyun, yazılım, mobil ya da 3D baskı — hangi alanda olursa olsun, doğrudan yazabilirsin.</p>
+      </div>
+      <div class="contact-list">
+        <a href="mailto:merhaba@pikolatta.com">
+          <span>merhaba@pikolatta.com</span>
+          <span class="k mono">E-POSTA</span>
+        </a>
+        <div>
+          <a href="#">
+            <span>GitHub</span>
+            <span class="k mono">KOD</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="mono">© 2026 PİKOLATTA — ADANA, TR</span>
+    <span class="mono">SHEET 001 / 001</span>
+  </div>
+</footer>
+
+</body>
+</html>
